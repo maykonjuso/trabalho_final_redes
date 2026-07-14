@@ -139,6 +139,14 @@ CREATE TABLE IF NOT EXISTS sessoes(
 """
 
 def garantir_esquema(con):
+    # migração do banco da app v1: a tabela videos usava a coluna "channel";
+    # recria no formato novo (os vídeos são recadastrados pelo --init/upload)
+    if con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='videos'").fetchone():
+        colunas = {c[1] for c in con.execute("PRAGMA table_info(videos)")}
+        if "canal" not in colunas:
+            con.execute("DROP TABLE videos")
+    con.execute("DROP TABLE IF EXISTS users")     # tabelas da app v1
+    con.execute("DROP TABLE IF EXISTS channels")
     con.executescript(ESQUEMA)
     try:  # bancos criados antes da coluna de qualidade ultra
         con.execute("ALTER TABLE videos ADD COLUMN arquivo_uld TEXT")
