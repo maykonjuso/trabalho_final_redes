@@ -50,7 +50,7 @@ sudo pppd call wan_r1
 
 echo -n "[R1] Aguardando ppp0"
 for i in {1..15}; do ip link show ppp0 &>/dev/null && break; echo -n "."; sleep 1; done; echo
-ip link show ppp0 &>/dev/null || { echo "[ERRO] ppp0 não subiu (R2 rodou o r2-ppp.sh? cabo cross?)"; exit 1; }
+ip link show ppp0 &>/dev/null || { echo "[ERRO] ppp0 não subiu (R2 rodou o r2-2-ppp.sh? cabo cross?)"; exit 1; }
 
 sudo ip link set ppp0 multicast on
 sudo ip route replace 192.168.0.0/24 via 10.0.0.2   # rota p/ LAN#2

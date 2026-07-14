@@ -43,7 +43,7 @@ sudo ip link set "$IF_C" up
 sudo ip link set "$IF_C" multicast on
 
 sudo sysctl -w net.ipv4.ip_forward=1
-sudo sysctl -w net.ipv4.conf.all.mc_forwarding=1
+# mc_forwarding é somente-leitura (fica 1 sozinho quando o smcroute registra a rota em r2-4-multicast.sh)
 
 echo "$IF_C" > /tmp/frc_if_lan2
 echo; echo "=== OK ==="; ip -br addr show dev "$IF_C"

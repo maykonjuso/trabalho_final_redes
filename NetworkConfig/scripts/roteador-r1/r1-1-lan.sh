@@ -51,7 +51,7 @@ sudo dhclient -v "$IF_LAB"
 
 echo "[R1] IP forwarding..."
 sudo sysctl -w net.ipv4.ip_forward=1
-sudo sysctl -w net.ipv4.conf.all.mc_forwarding=1
+# mc_forwarding é somente-leitura (fica 1 sozinho quando o smcroute registra a rota em r1-4-multicast.sh)
 
 echo "$IF_S"  > /tmp/frc_if_lan
 echo "$IF_LAB" > /tmp/frc_if_lab
