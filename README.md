@@ -57,5 +57,11 @@ Ou rode direto (os nomes têm número = ordem):
 - Os scripts **param o NetworkManager** antes de configurar (senão ele desfaz IP/rotas/resolv.conf).
 - Todos são **idempotentes**: limpam o estado anterior antes de aplicar — rode de novo sem medo.
 - Pacotes (bind9, postfix, smcroute...) são instalados pelo próprio script quando faltam — instale **enquanto a máquina ainda tem Internet** (a WAN de 115200 bps não serve para apt).
-- Vídeos: copie `filme.mp4`, `aula.mp4`, `show.mp4` para `/opt/miniiptv/videos` (o s4 converte p/ versão leve).
+- Vídeos: copie `filme.mp4`, `aula.mp4`, `show.mp4` para `/opt/miniiptv/videos` (o s4 converte p/ as versões WAN).
 - Usuários da aplicação: `admin/admin123`, `aluno1/senha1` … `aluno4/senha4`.
+- **Qualidades WAN**: além da versão *leve* (80 kb/s, comando da spec), o backend gera uma *ultra leve*
+  (~45 kb/s totais: vídeo 33k, 8 fps, 192x144, áudio 12k). Como o PPP de 115200 bps ainda carrega o
+  overhead TS/UDP/PPP, a *ultra* transmite com folga e trava menos — o cliente WAN escolhe no frontend
+  (ou via `POST /api/canais/<n>/assistir` com `{"qualidade":"ultra"}`).
+- O JWT é gerado com `hmac`/`base64` da biblioteca padrão (sem PyJWT — o `python3-jwt` do apt é a
+  versão 1.x, que retorna `bytes` e quebrava o `jsonify`).
