@@ -302,7 +302,7 @@ def qualidades_disponiveis(video):
             if video[coluna] and os.path.isfile(video[coluna])]
 
 # =========================================================== autenticação
-@app.post("/api/auth/token")
+@app.route("/api/auth/token", methods=["POST"])
 def emitir_token():
     """OAuth2 password grant: login+senha => JWT de acesso."""
     dados = request.form if request.form else (request.get_json(silent=True) or {})
@@ -314,13 +314,13 @@ def emitir_token():
                    token_type="Bearer", expires_in=VALIDADE_SEG,
                    papel=usuario["papel"])
 
-@app.get("/api/auth/perfil")
+@app.route("/api/auth/perfil", methods=["GET"])
 @exige_login()
 def quem_sou():
     return jsonify(login=g.login, papel=g.papel, perfil_rede=perfil_do_cliente())
 
 # ================================================================= canais
-@app.get("/api/canais")
+@app.route("/api/canais", methods=["GET"])
 @exige_login()
 def listar_canais():
     perfil = perfil_do_cliente()
@@ -349,7 +349,7 @@ def listar_canais():
         })
     return jsonify(perfil=perfil, canais=saida)
 
-@app.post("/api/canais")
+@app.route("/api/canais", methods=["POST"])
 @exige_login(admin=True)
 def criar_canal():
     dados = request.get_json(silent=True) or {}
@@ -369,7 +369,7 @@ def criar_canal():
         return jsonify(erro=f"canal {numero} já existe"), 409
     return jsonify(ok=True, numero=numero), 201
 
-@app.delete("/api/canais/<int:numero>")
+@app.route("/api/canais/<int:numero>", methods=["DELETE"])
 @exige_login(admin=True)
 def remover_canal(numero):
     con = banco()
@@ -384,7 +384,7 @@ def remover_canal(numero):
     return jsonify(ok=True)
 
 # ===================================================== assistir/trocar/sair
-@app.post("/api/canais/<int:numero>/assistir")
+@app.route("/api/canais/<int:numero>/assistir", methods=["POST"])
 @exige_login()
 def assistir(numero):
     perfil = perfil_do_cliente()
@@ -428,7 +428,7 @@ def assistir(numero):
                    qualidade=fluxo["qualidade"] if fluxo else None,
                    playlist=f"#EXTM3U\n#EXTINF:-1,Canal {numero}\nudp://@{destino}\n")
 
-@app.post("/api/canais/<int:numero>/sair")
+@app.route("/api/canais/<int:numero>/sair", methods=["POST"])
 @exige_login()
 def sair(numero):
     con = banco()
@@ -440,7 +440,7 @@ def sair(numero):
     return jsonify(ok=True)
 
 # ================================================================== vídeos
-@app.post("/api/videos")
+@app.route("/api/videos", methods=["POST"])
 @exige_login(admin=True)
 def cadastrar_video():
     """Upload + conversões WAN (leve e ultra) + metadados + vínculo ao canal."""
@@ -480,7 +480,7 @@ def cadastrar_video():
     con.commit()
     return jsonify(ok=True, canal=canal, titulo=titulo, metadados=meta), 201
 
-@app.delete("/api/videos/<int:canal>")
+@app.route("/api/videos/<int:canal>", methods=["DELETE"])
 @exige_login(admin=True)
 def remover_video(canal):
     con = banco()
@@ -499,7 +499,7 @@ def remover_video(canal):
     return jsonify(ok=True)
 
 # ================================================================ playlist
-@app.get("/api/playlist.m3u")
+@app.route("/api/playlist.m3u", methods=["GET"])
 @exige_login()
 def playlist_m3u():
     perfil = perfil_do_cliente()
@@ -510,7 +510,7 @@ def playlist_m3u():
     return "\n".join(linhas) + "\n", 200, {"Content-Type": "audio/x-mpegurl"}
 
 # ============================================================ painel admin
-@app.get("/api/admin/painel")
+@app.route("/api/admin/painel", methods=["GET"])
 @exige_login(admin=True)
 def painel():
     con = banco()
@@ -616,6 +616,15 @@ for v in filme aula show; do
 done
 
 sudo chown -R iptv:iptv /opt/miniiptv
+
+# valida o código antes de subir o serviço (pega incompatibilidade de versão do Flask etc.)
+sudo python3 -m py_compile /opt/miniiptv/servidor.py \
+  || { echo "[ERRO] servidor.py com erro de sintaxe"; exit 1; }
+sudo -u iptv python3 -c "
+import sys; sys.path.insert(0, '/opt/miniiptv')
+import servidor" \
+  || { echo "[ERRO] servidor.py não importa nesta máquina (veja o traceback acima)"; exit 1; }
+
 sudo -u iptv python3 /opt/miniiptv/servidor.py --init
 
 # ---------- serviço systemd ----------
@@ -641,15 +650,31 @@ sleep 3
 
 # ---------- autoteste ----------
 echo; echo "=== Autoteste ==="
-TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/token \
-          -d username=admin -d password=admin123 \
-        | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))")
+# extrai um campo de um JSON sem estourar traceback se a resposta vier vazia
+campo(){ python3 -c "
+import sys, json
+try:
+    print(json.load(sys.stdin).get('$1', ''))
+except Exception:
+    print('')"; }
+
+if ! systemctl is-active --quiet miniiptv; then
+  echo "[ERRO] serviço miniiptv não está ativo — últimas linhas do log:"
+  sudo journalctl -u miniiptv -n 30 --no-pager
+  exit 1
+fi
+TOKEN=$(curl -s --max-time 5 -X POST http://localhost:8000/api/auth/token \
+          -d username=admin -d password=admin123 | campo access_token)
 if [ -n "$TOKEN" ]; then
   echo "[OK] backend no ar — JWT emitido na porta 8000"
-  curl -s http://localhost:8000/api/canais -H "Authorization: Bearer $TOKEN" \
-    | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"[OK] {len(d['canais'])} canais cadastrados (perfil {d['perfil']})\")"
+  N=$(curl -s --max-time 5 http://localhost:8000/api/canais \
+        -H "Authorization: Bearer $TOKEN" | campo perfil)
+  [ -n "$N" ] && echo "[OK] lista de canais respondendo (perfil $N)" \
+              || echo "[AVISO] /api/canais não respondeu como esperado"
 else
-  echo "[ERRO] backend não respondeu — veja: journalctl -u miniiptv -n 30"; exit 1
+  echo "[ERRO] backend ativo mas não emitiu token — últimas linhas do log:"
+  sudo journalctl -u miniiptv -n 30 --no-pager
+  exit 1
 fi
 sudo test -f /opt/miniiptv/videos/filme.mp4 || sudo test -f /opt/miniiptv/videos/filme_hd.mp4 \
   || echo "[PENDENTE] copie filme.mp4, aula.mp4, show.mp4 p/ /opt/miniiptv/videos e rode este script de novo"
