@@ -14,10 +14,14 @@ while true; do
   echo "=============================================="
   echo
   echo -e "${BLUE}Escolha a máquina:${NC}"
-  select MAQ in "servidor-s" "roteador-r1" "roteador-r2" "cliente-x" "testes" "sair"; do
+  select MAQ in "servidor-s" "roteador-r1" "roteador-r2" "cliente-x" "testes" "RESET-desfazer-tudo" "sair"; do
     [ -n "$MAQ" ] && break
   done
   [ "$MAQ" = "sair" ] && exit 0
+  if [ "$MAQ" = "RESET-desfazer-tudo" ]; then
+    bash NetworkConfig/scripts/reset-maquina.sh
+    read -rp "ENTER para voltar ao menu..."; continue
+  fi
 
   DIR="NetworkConfig/scripts/$MAQ"
   echo
