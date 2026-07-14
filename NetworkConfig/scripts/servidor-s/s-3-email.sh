@@ -17,18 +17,22 @@ sudo openssl req -new -x509 -days 365 -nodes -subj "/CN=s.$DOMINIO" \
 
 echo "[S] Postfix..."
 sudo postconf -e "myhostname = s.$DOMINIO" \
-             -e "mydomain = $DOMINIO" \
-             -e "mydestination = \$myhostname, $DOMINIO, localhost" \
-             -e "mynetworks = 127.0.0.0/8 172.16.0.0/16 192.168.0.0/24 10.0.0.0/30" \
-             -e "smtpd_tls_cert_file=/etc/ssl/certs/mail.pem" \
-             -e "smtpd_tls_key_file=/etc/ssl/private/mail.key" \
-             -e "smtpd_tls_security_level=may"
+              "mydomain = $DOMINIO" \
+              "mydestination = \$myhostname, $DOMINIO, localhost" \
+              "mynetworks = 127.0.0.0/8 172.16.0.0/16 192.168.0.0/24 10.0.0.0/30" \
+              "smtpd_tls_cert_file=/etc/ssl/certs/mail.pem" \
+              "smtpd_tls_key_file=/etc/ssl/private/mail.key" \
+              "smtpd_tls_security_level=may"
 sudo systemctl restart postfix
 
 echo "[S] Dovecot (IMAP + POP3 + TLS)..."
-sudo sed -i 's|^ssl_cert =.*|ssl_cert = </etc/ssl/certs/mail.pem|;
-             s|^ssl_key =.*|ssl_key = </etc/ssl/private/mail.key|;
-             s|^ssl =.*|ssl = yes|' /etc/dovecot/conf.d/10-ssl.conf
+# nomes dos parâmetros de cert/key mudaram no Dovecot 2.4 (ssl_cert/ssl_key -> ssl_server_cert_file/ssl_server_key_file);
+# cobre as duas versões para não falhar silenciosamente
+sudo sed -i -E \
+  -e 's#^(ssl_cert|ssl_server_cert_file) =.*#\1 = </etc/ssl/certs/mail.pem#' \
+  -e 's#^(ssl_key|ssl_server_key_file) =.*#\1 = </etc/ssl/private/mail.key#' \
+  -e 's#^ssl =.*#ssl = yes#' \
+  /etc/dovecot/conf.d/10-ssl.conf
 sudo systemctl restart dovecot
 
 echo "[S] Caixas de e-mail (aluno1/aluno1123, aluno2/aluno2123)..."

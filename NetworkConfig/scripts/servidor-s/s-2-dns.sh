@@ -4,7 +4,7 @@ set -e
 
 DOMINIO="grupo4.unb"
 IP_S="172.16.0.2"
-FORWARDER="${1:-8.8.8.8}"   # pode passar outro: ./s2-dns.sh <ip-dns-do-lab>
+FORWARDER="${1:-8.8.8.8}"   # pode passar outro: ./s-2-dns.sh <ip-dns-do-lab>
 
 echo "=== [S] DNS BIND9 ($DOMINIO, forwarder $FORWARDER) ==="
 
@@ -60,5 +60,5 @@ echo "nameserver 127.0.0.1" | sudo tee /etc/resolv.conf >/dev/null
 
 echo; echo "=== Testes ==="
 nslookup s.$DOMINIO 127.0.0.1 | tail -2
-nslookup google.com 127.0.0.1 | tail -3 || echo "[AVISO] externo falhou: veja se o S tem Internet (NAT do R1) ou troque o forwarder: ./s2-dns.sh <dns-do-lab>"
-echo "Nos clientes (R2/X/Y): rode cliente-x/x2-dns.sh"
+nslookup google.com 127.0.0.1 | tail -3 || echo "[AVISO] externo falhou: veja se o S tem Internet (NAT do R1) ou troque o forwarder: ./s-2-dns.sh <dns-do-lab>"
+echo "Nos clientes (R2/X/Y): rode cliente-x/x-2-dns.sh"

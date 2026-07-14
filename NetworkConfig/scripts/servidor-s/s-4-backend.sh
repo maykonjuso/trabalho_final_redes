@@ -4,8 +4,9 @@ set -e
 echo "=== [S] Backend Mini-IPTV ==="
 
 if ! python3 -c "import flask, jwt" 2>/dev/null; then
-  sudo apt update && sudo apt install -y python3-pip ffmpeg vlc-bin vlc-plugin-base sqlite3
-  sudo pip3 install flask pyjwt werkzeug
+  # pip3 install global quebra em Ubuntu 22.04+ (PEP 668 / externally-managed-environment) -> usa pacotes apt
+  sudo apt update && sudo apt install -y python3-flask python3-jwt python3-werkzeug \
+    ffmpeg vlc-bin vlc-plugin-base sqlite3
 fi
 
 id iptv >/dev/null 2>&1 || sudo useradd -r -m -d /opt/miniiptv iptv

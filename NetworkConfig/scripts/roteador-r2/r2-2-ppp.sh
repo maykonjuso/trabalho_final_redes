@@ -49,9 +49,12 @@ EOF
 sudo killall pppd 2>/dev/null || true; sleep 1
 sudo pppd call wan_r2
 
-echo -n "[R2] Aguardando ppp0"
-for i in {1..15}; do ip link show ppp0 &>/dev/null && break; echo -n "."; sleep 1; done; echo
-ip link show ppp0 &>/dev/null || { echo "[ERRO] ppp0 não subiu (cabo cross? porta certa?)"; exit 1; }
+echo -n "[R2] Aguardando ppp0 negociar IP (IPCP)"
+for i in {1..30}; do ip -4 -o addr show dev ppp0 2>/dev/null | grep -q "inet " && break; echo -n "."; sleep 1; done; echo
+ip link show ppp0 &>/dev/null \
+  || { echo "[ERRO] ppp0 não subiu (cabo cross? porta certa? R1 já rodou o r1-2-ppp.sh?)"; exit 1; }
+ip -4 -o addr show dev ppp0 2>/dev/null | grep -q "inet " \
+  || { echo "[ERRO] ppp0 existe mas não recebeu IP via IPCP (negociação travou — confira R1 e rode de novo)"; exit 1; }
 
 sudo ip link set ppp0 multicast on
 sudo ip route del default 2>/dev/null || true
