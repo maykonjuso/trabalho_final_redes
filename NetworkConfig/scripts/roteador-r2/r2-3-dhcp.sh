@@ -37,7 +37,7 @@ command -v dhcpd >/dev/null || sudo apt install -y isc-dhcp-server
 
 sudo systemctl stop isc-dhcp-server 2>/dev/null || true
 sudo tee /etc/dhcp/dhcpd.conf >/dev/null <<'EOF'
-option domain-name "grupo4.unb";
+option domain-name "grupo6.unb";
 option domain-name-servers 172.16.0.2;
 default-lease-time 600;
 max-lease-time 7200;

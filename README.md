@@ -1,4 +1,4 @@
-# Mini-IPTV Multicast com Controle de Banda WAN — Grupo 4
+# Mini-IPTV Multicast com Controle de Banda WAN — Grupo 6
 
 Projeto da disciplina **FRC — Fundamentos de Redes de Computadores** (UnB/FGA).
 Scripts de configuração por máquina: leve o repositório para cada PC (pendrive/git) e rode na ordem.
@@ -16,7 +16,7 @@ Scripts de configuração por máquina: leve o repositório para cada PC (pendri
                                                                [ X ]  [ Y ]  (DHCP .100-.200)
 ```
 
-Multicast (grupo 4): `239.10.4.x` = perfil LAN (Z/W, vídeo HD) · `239.20.4.x` = perfil WAN115K (X/Y, vídeo leve) · porta 5004.
+Multicast (grupo 6): `239.10.6.x` = perfil LAN (Z/W, vídeo HD) · `239.20.6.x` = perfil WAN115K (X/Y, vídeo leve) · porta 5004.
 
 ## Como usar
 
@@ -38,7 +38,7 @@ Ou rode direto (os nomes têm número = ordem):
 | R1 | 4 | `roteador-r1/r1-4-multicast.sh` | smcroute LAN/WAN |
 | R2 | 4 | `roteador-r2/r2-4-multicast.sh` | smcroute WAN->LAN#2 |
 | R1 | 5 | `roteador-r1/r1-5-tc.sh` | tc 115200 bps na WAN |
-| S  | 2 | `servidor-s/s-2-dns.sh` | BIND9 zona grupo4.unb |
+| S  | 2 | `servidor-s/s-2-dns.sh` | BIND9 zona grupo6.unb |
 | S  | 3 | `servidor-s/s-3-email.sh` | Postfix+Dovecot TLS (IMAP/POP3) |
 | S  | 4 | `servidor-s/s-4-backend.sh` | Backend Mini-IPTV (Flask+systemd) |
 | R1 | 6 | `roteador-r1/r1-6-web.sh` | Apache: intranet + API Gateway HTTP/HTTPS + frontend |

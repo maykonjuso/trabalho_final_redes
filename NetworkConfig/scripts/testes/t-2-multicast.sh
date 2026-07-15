@@ -2,7 +2,7 @@
 # T2 — Roteamento multicast fim a fim (sem depender do VLC)
 # Emissor injeta tráfego UDP no grupo; receptor confirma que os pacotes
 # atravessaram os roteadores (smcroute). Funciona nos dois perfis:
-#   LAN  (Z/W):  239.10.4.<canal>   WAN (X/Y):  239.20.4.<canal>
+#   LAN  (Z/W):  239.10.6.<canal>   WAN (X/Y):  239.20.6.<canal>
 set -u
 echo "=== T2: Multicast — escolha o papel desta máquina ==="
 echo
@@ -18,8 +18,8 @@ select PAPEL in "receptor" "emissor" "roteador (ver contadores)" "sair"; do
 done
 [ "$PAPEL" = "sair" ] && exit 0
 
-read -rp "Perfil [1=LAN 239.10.4.x | 2=WAN 239.20.4.x] (padrão 2): " P
-GRUPO_M=$([ "${P:-2}" = 1 ] && echo 239.10.4.1 || echo 239.20.4.1)
+read -rp "Perfil [1=LAN 239.10.6.x | 2=WAN 239.20.6.x] (padrão 2): " P
+GRUPO_M=$([ "${P:-2}" = 1 ] && echo 239.10.6.1 || echo 239.20.6.1)
 
 case "$PAPEL" in
   receptor*)

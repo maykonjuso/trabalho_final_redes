@@ -26,7 +26,7 @@ sudo tee /opt/miniiptv/servidor.py >/dev/null <<'PYAPP'
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Servidor Mini-IPTV — Grupo 4 (FRC / UnB-FGA)
+Servidor Mini-IPTV — Grupo 6 (FRC / UnB-FGA)
 
 Backend da aplicação de difusão de vídeos em multicast (spec seção 2.2):
   * autenticação OAuth2 (password grant) emitindo JWT HS256;
@@ -43,7 +43,7 @@ Backend da aplicação de difusão de vídeos em multicast (spec seção 2.2):
   * playlist m3u por perfil e painel administrativo.
 
 Endereçamento multicast: 239.<perfil>.<grupo>.<canal>, porta 5004,
-perfil 10 = LAN, 20 = WAN115K, grupo = 4.
+perfil 10 = LAN, 20 = WAN115K, grupo = 6.
 
 Uso:  servidor.py --init   (cria/semeia o banco)
       servidor.py          (sobe a API na porta 8000)
@@ -67,9 +67,9 @@ from werkzeug.security import check_password_hash, generate_password_hash
 BASE          = "/opt/miniiptv"
 BANCO         = os.path.join(BASE, "iptv.db")
 DIR_VIDEOS    = os.path.join(BASE, "videos")
-CHAVE_JWT     = "grupo4-frc-2026-troque-esta-chave"
+CHAVE_JWT     = "grupo6-frc-2026-troque-esta-chave"
 VALIDADE_SEG  = 4 * 3600
-GRUPO         = 4
+GRUPO         = 6
 PORTA_MCAST   = 5004
 PERFIL_BYTE   = {"LAN": 10, "WAN115K": 20}
 CAPACIDADE_WAN = 115200  # bps do enlace PPP
@@ -676,7 +676,7 @@ sudo -u iptv python3 /opt/miniiptv/servidor.py --init
 # ---------- serviço systemd ----------
 sudo tee /etc/systemd/system/miniiptv.service >/dev/null <<'EOF'
 [Unit]
-Description=Backend Mini-IPTV Grupo 4
+Description=Backend Mini-IPTV Grupo 6
 After=network.target
 
 [Service]

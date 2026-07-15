@@ -18,8 +18,8 @@ except Exception: print('')" "$1" "$2"; }
 
 # -------- descobre onde está a API (backend direto ou via gateway) --------
 API=""; LOCAL=0
-for CAND in "http://localhost:8000/api" "http://s.grupo4.unb:8000/api" \
-            "http://172.16.0.2:8000/api" "http://r1.grupo4.unb/api" \
+for CAND in "http://localhost:8000/api" "http://s.grupo6.unb:8000/api" \
+            "http://172.16.0.2:8000/api" "http://r1.grupo6.unb/api" \
             "http://172.16.0.1/api"; do
   R=$(curl -s --max-time 3 -X POST "$CAND/auth/token" -d username=admin -d password=admin123)
   if [ -n "$(jpick "$R" access_token)" ]; then API=$CAND; break; fi
@@ -57,28 +57,28 @@ S=$(curl -s -o /dev/null -w '%{http_code}' -X POST $API/canais -H "Authorization
 
 echo; echo "--- perfis e endereçamento multicast (239.<perfil>.<grupo>.<canal>) ---"
 R=$(curl -s $API/canais -H "Authorization: Bearer $TU")
-echo "$R" | grep -q '"perfil":"LAN"' && echo "$R" | grep -q '239.10.4.1' \
-  && ok "perfil LAN: canais anunciam 239.10.4.x" || falha "canais LAN" "$R"
+echo "$R" | grep -q '"perfil":"LAN"' && echo "$R" | grep -q '239.10.6.1' \
+  && ok "perfil LAN: canais anunciam 239.10.6.x" || falha "canais LAN" "$R"
 R=$(curl -s $API/canais -H "Authorization: Bearer $TU" -H "$XFF")
-echo "$R" | grep -q '"perfil":"WAN115K"' && echo "$R" | grep -q '239.20.4.1' \
-  && ok "perfil WAN115K (IP 192.168.0.x): canais anunciam 239.20.4.x" || falha "canais WAN" "$R"
+echo "$R" | grep -q '"perfil":"WAN115K"' && echo "$R" | grep -q '239.20.6.1' \
+  && ok "perfil WAN115K (IP 192.168.0.x): canais anunciam 239.20.6.x" || falha "canais WAN" "$R"
 echo "$R" | grep -q '"situacao"' && ok "situação por canal (disponivel/ativo/indisponivel)" || falha "situação" "$R"
 echo "$R" | grep -q '"duracao_s"' && ok "metadados do vídeo expostos na listagem" || falha "metadados" "$R"
 
 echo; echo "--- assistir / trocar / sair (difusão sob demanda) ---"
 R=$(curl -s -X POST $API/canais/1/assistir -H "Authorization: Bearer $TU")
-[ "$(jpick "$R" mcast)" = "udp://@239.10.4.1:5004" ] && ok "assistir canal 1 LAN -> 239.10.4.1:5004" || falha "assistir LAN" "$R"
+[ "$(jpick "$R" mcast)" = "udp://@239.10.6.1:5004" ] && ok "assistir canal 1 LAN -> 239.10.6.1:5004" || falha "assistir LAN" "$R"
 echo "$R" | grep -q '#EXTM3U' && ok "resposta traz playlist .m3u pronta p/ VLC" || falha "playlist na resposta" "$R"
 if [ $LOCAL = 1 ]; then
   sleep 1
-  pgrep -f "dst=239.10.4.1" >/dev/null && ok "processo cvlc transmitindo p/ 239.10.4.1" || falha "cvlc canal 1" "$(pgrep -a vlc)"
+  pgrep -f "dst=239.10.6.1" >/dev/null && ok "processo cvlc transmitindo p/ 239.10.6.1" || falha "cvlc canal 1" "$(pgrep -a vlc)"
 else
   pula "verificação do processo cvlc (só no S)"
 fi
 curl -s -X POST $API/canais/3/assistir -H "Authorization: Bearer $TU" >/dev/null
 if [ $LOCAL = 1 ]; then
   sleep 1
-  ! pgrep -f "dst=239.10.4.1" >/dev/null && pgrep -f "dst=239.10.4.3" >/dev/null \
+  ! pgrep -f "dst=239.10.6.1" >/dev/null && pgrep -f "dst=239.10.6.3" >/dev/null \
     && ok "troca de canal: difusão antiga parou, nova no ar" || falha "troca de canal" "$(pgrep -a vlc)"
 else
   R=$(curl -s $API/canais -H "Authorization: Bearer $TA")
@@ -90,7 +90,7 @@ echo; echo "--- regra WAN115K: um único canal por vez na LAN#2 ---"
 R=$(curl -s -X POST $API/auth/token -d username=aluno2 -d password=senha2); T2=$(jpick "$R" access_token)
 R=$(curl -s -X POST $API/auth/token -d username=aluno3 -d password=senha3); T3=$(jpick "$R" access_token)
 R=$(curl -s -X POST $API/canais/2/assistir -H "Authorization: Bearer $T2" -H "$XFF")
-[ "$(jpick "$R" mcast)" = "udp://@239.20.4.2:5004" ] && ok "1º cliente WAN escolhe o canal (2)" || falha "WAN assiste" "$R"
+[ "$(jpick "$R" mcast)" = "udp://@239.20.6.2:5004" ] && ok "1º cliente WAN escolhe o canal (2)" || falha "WAN assiste" "$R"
 RESP=$(curl -s -w '\n%{http_code}' -X POST $API/canais/3/assistir -H "Authorization: Bearer $T3" -H "$XFF")
 S=$(echo "$RESP" | tail -1); CORPO=$(echo "$RESP" | head -1)
 [ "$S" = 409 ] && [ "$(jpick "$CORPO" canal_ativo)" = 2 ] \
@@ -104,7 +104,7 @@ N=$(python3 -c "import sys,json; print([c['espectadores'] for c in json.loads(sy
 echo; echo "--- painel administrativo ---"
 R=$(curl -s $API/admin/painel -H "Authorization: Bearer $TA")
 echo "$R" | grep -q '"total_conectados":3' && ok "usuários conectados = 3" || falha "conectados" "$R"
-echo "$R" | grep -q '239.20.4.2:5004' && ok "fluxos multicast ativos listados" || falha "fluxos" "$R"
+echo "$R" | grep -q '239.20.6.2:5004' && ok "fluxos multicast ativos listados" || falha "fluxos" "$R"
 echo "$R" | grep -q '"ocupada":true' && ok "ocupação da WAN reportada" || falha "wan" "$R"
 echo "$R" | grep -q 'processos_vlc' && ok "processos VLC reportados" || falha "processos_vlc" "$R"
 
@@ -123,10 +123,10 @@ fi
 
 echo; echo "--- playlist m3u por perfil ---"
 R=$(curl -s $API/playlist.m3u -H "Authorization: Bearer $TU")
-echo "$R" | head -1 | grep -q '#EXTM3U' && echo "$R" | grep -q '239.10.4.' \
-  && ok "playlist LAN (#EXTM3U com 239.10.4.x)" || falha "playlist LAN" "$R"
+echo "$R" | head -1 | grep -q '#EXTM3U' && echo "$R" | grep -q '239.10.6.' \
+  && ok "playlist LAN (#EXTM3U com 239.10.6.x)" || falha "playlist LAN" "$R"
 R=$(curl -s $API/playlist.m3u -H "Authorization: Bearer $TU" -H "$XFF")
-echo "$R" | grep -q '239.20.4.' && ok "playlist WAN (239.20.4.x)" || falha "playlist WAN" "$R"
+echo "$R" | grep -q '239.20.6.' && ok "playlist WAN (239.20.6.x)" || falha "playlist WAN" "$R"
 
 echo; echo "--- administração de canais ---"
 S=$(curl -s -o /dev/null -w '%{http_code}' -X POST $API/canais -H "Authorization: Bearer $TA" \

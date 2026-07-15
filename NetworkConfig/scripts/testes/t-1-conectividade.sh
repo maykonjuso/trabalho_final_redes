@@ -30,8 +30,8 @@ ping -c 2 -W 2 8.8.8.8 >/dev/null 2>&1 \
 echo
 echo "--- Resolução de nomes (DNS do S) ---"
 for h in s r1 r2; do
-  IP=$(nslookup "$h.grupo4.unb" 2>/dev/null | awk '/^Address: /{print $2; exit}')
-  [ -n "$IP" ] && ok "DNS interno $h.grupo4.unb -> $IP" || falha "DNS interno $h.grupo4.unb"
+  IP=$(nslookup "$h.grupo6.unb" 2>/dev/null | awk '/^Address: /{print $2; exit}')
+  [ -n "$IP" ] && ok "DNS interno $h.grupo6.unb -> $IP" || falha "DNS interno $h.grupo6.unb"
 done
 nslookup google.com >/dev/null 2>&1 && ok "DNS externo (google.com)" || falha "DNS externo (google.com)"
 

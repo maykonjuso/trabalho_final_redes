@@ -9,7 +9,7 @@ GREEN='\033[0;32m'; BLUE='\033[0;34m'; RED='\033[0;31m'; NC='\033[0m'
 while true; do
   clear
   echo "=============================================="
-  echo "  MINI-IPTV GRUPO 4 — SCRIPTS DE CONFIGURAÇÃO"
+  echo "  MINI-IPTV GRUPO 6 — SCRIPTS DE CONFIGURAÇÃO"
   echo "  [S] --- [R1] ==PPP== [R2] --- [X] [Y]"
   echo "=============================================="
   echo

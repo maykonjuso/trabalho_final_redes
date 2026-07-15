@@ -2,7 +2,7 @@
 # [S] E-mail seguro: Postfix (SMTP) + Dovecot (IMAP e POP3) com TLS
 set -e
 
-DOMINIO="grupo4.unb"
+DOMINIO="grupo6.unb"
 echo "=== [S] E-mail (postfix + dovecot, TLS) ==="
 
 if ! command -v postconf >/dev/null; then

@@ -37,7 +37,7 @@ command -v smcroutectl >/dev/null || sudo apt install -y smcroute
 sudo systemctl restart smcroute
 sudo systemctl enable smcroute 2>/dev/null || true
 sleep 1
-sudo smcroutectl add ppp0 239.20.4.0/24 "$IF_C"
-sudo smcroutectl join "$IF_C" 239.20.4.1
+sudo smcroutectl add ppp0 239.20.6.0/24 "$IF_C"
+sudo smcroutectl join "$IF_C" 239.20.6.1
 
 echo; echo "=== OK ==="; sudo smcroutectl show

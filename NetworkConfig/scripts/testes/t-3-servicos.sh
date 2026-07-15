@@ -14,8 +14,8 @@ echo "=== T3: Serviços da intranet ==="
 echo
 echo "--- DNS (BIND9 no S) ---"
 for h in s r1 r2; do
-  IP=$(nslookup "$h.grupo4.unb" "$S_IP" 2>/dev/null | awk '/^Address: /{print $2; exit}')
-  [ -n "$IP" ] && ok "registro A $h.grupo4.unb -> $IP" || falha "registro A $h.grupo4.unb"
+  IP=$(nslookup "$h.grupo6.unb" "$S_IP" 2>/dev/null | awk '/^Address: /{print $2; exit}')
+  [ -n "$IP" ] && ok "registro A $h.grupo6.unb -> $IP" || falha "registro A $h.grupo6.unb"
 done
 nslookup google.com "$S_IP" >/dev/null 2>&1 \
   && ok "recursão p/ nomes externos (google.com via $S_IP)" \
@@ -23,7 +23,7 @@ nslookup google.com "$S_IP" >/dev/null 2>&1 \
 
 echo
 echo "--- WEB + API Gateway (Apache no R1) ---"
-R1=r1.grupo4.unb
+R1=r1.grupo6.unb
 nslookup $R1 >/dev/null 2>&1 || R1=172.16.0.1
 curl -s --connect-timeout 4 "http://$R1/" | grep -qi "intranet" \
   && ok "página da intranet (http://$R1/)" || falha "página da intranet (http://$R1/)"

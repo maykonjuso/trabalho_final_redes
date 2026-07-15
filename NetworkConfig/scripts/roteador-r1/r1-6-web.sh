@@ -8,7 +8,7 @@ sudo a2enmod proxy proxy_http headers ssl >/dev/null
 
 # ---------- página estática da intranet ----------
 sudo tee /var/www/html/index.html >/dev/null <<'HTML'
-<!doctype html><meta charset="utf-8"><title>Intranet Grupo 4</title>
+<!doctype html><meta charset="utf-8"><title>Intranet Grupo 6</title>
 <style>
   body{margin:0;min-height:100vh;display:grid;place-items:center;
        background:#0b0e14;color:#e6e9f0;font-family:system-ui,sans-serif}
@@ -23,7 +23,7 @@ sudo tee /var/www/html/index.html >/dev/null <<'HTML'
     text-decoration:none;font-weight:600}
 </style>
 <div class="cartao">
-  <h1>Intranet — Grupo 4</h1>
+  <h1>Intranet — Grupo 6</h1>
   <p>FRC · Mini-IPTV Multicast com Controle de Banda WAN</p>
   <a href="/iptv.html">▶ Abrir Mini-IPTV</a>
 </div>
@@ -35,7 +35,7 @@ sudo tee /var/www/html/iptv.html >/dev/null <<'HTML'
 <html lang="pt-BR">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mini-IPTV · Grupo 4</title>
+<title>Mini-IPTV · Grupo 6</title>
 <style>
   :root{
     --fundo:#0b0e14; --painel:#111623; --painel2:#161d2e; --borda:#232a3a;
@@ -128,8 +128,8 @@ sudo tee /var/www/html/iptv.html >/dev/null <<'HTML'
 <!-- ============ LOGIN ============ -->
 <div id="telaLogin">
   <form onsubmit="entrar(event)">
-    <h1 class="marca">IPTV·4</h1>
-    <p>Mini-IPTV Multicast — FRC · Grupo 4</p>
+    <h1 class="marca">IPTV·6</h1>
+    <p>Mini-IPTV Multicast — FRC · Grupo 6</p>
     <input id="campoUsuario" placeholder="usuário" autocomplete="username" required>
     <input id="campoSenha" type="password" placeholder="senha" autocomplete="current-password" required>
     <p id="erroLogin"></p>
@@ -140,7 +140,7 @@ sudo tee /var/www/html/iptv.html >/dev/null <<'HTML'
 <!-- ============ APLICAÇÃO ============ -->
 <div id="app">
   <header>
-    <span class="marca">IPTV·4</span>
+    <span class="marca">IPTV·6</span>
     <span id="chipPerfil" class="chip"></span>
     <span id="chipUsuario" class="chip"></span>
     <select id="selQualidade" style="display:none;width:auto" title="qualidade da transmissão WAN">
@@ -322,7 +322,7 @@ async function baixarPlaylist(){
   const r = await fetch("/api/playlist.m3u", {headers: {Authorization: "Bearer " + token}});
   const blob = new Blob([await r.text()], {type: "audio/x-mpegurl"});
   const a = Object.assign(document.createElement("a"),
-                          {href: URL.createObjectURL(blob), download: "iptv-grupo4.m3u"});
+                          {href: URL.createObjectURL(blob), download: "iptv-grupo6.m3u"});
   a.click();
 }
 
@@ -417,12 +417,12 @@ setInterval(() => token && atualizar(), 5000);
 HTML
 
 # ---------- certificado + virtual hosts (API Gateway HTTP/HTTPS) ----------
-[ -f /etc/ssl/certs/r1.pem ] || sudo openssl req -new -x509 -days 365 -nodes -subj "/CN=r1.grupo4.unb" \
+[ -f /etc/ssl/certs/r1.pem ] || sudo openssl req -new -x509 -days 365 -nodes -subj "/CN=r1.grupo6.unb" \
   -out /etc/ssl/certs/r1.pem -keyout /etc/ssl/private/r1.key 2>/dev/null
 
 sudo tee /etc/apache2/sites-available/miniiptv.conf >/dev/null <<'EOF'
 <VirtualHost *:80>
-    ServerName r1.grupo4.unb
+    ServerName r1.grupo6.unb
     DocumentRoot /var/www/html
     ProxyPreserveHost On
     ProxyPass        /api http://172.16.0.2:8000/api
@@ -432,7 +432,7 @@ EOF
 
 sudo tee /etc/apache2/sites-available/miniiptv-ssl.conf >/dev/null <<'EOF'
 <VirtualHost *:443>
-    ServerName r1.grupo4.unb
+    ServerName r1.grupo6.unb
     SSLEngine on
     SSLCertificateFile /etc/ssl/certs/r1.pem
     SSLCertificateKeyFile /etc/ssl/private/r1.key
@@ -450,4 +450,4 @@ sudo systemctl restart apache2
 
 echo; echo "=== Teste ==="
 curl -s http://localhost/ | head -1
-echo "Nos clientes: https://r1.grupo4.unb/iptv.html (aceite o certificado)"
+echo "Nos clientes: https://r1.grupo6.unb/iptv.html (aceite o certificado)"

@@ -1,5 +1,5 @@
 #!/bin/bash
-# [R1] Roteamento multicast (smcroute): 239.10.4.x -> Lab | 239.20.4.x -> WAN
+# [R1] Roteamento multicast (smcroute): 239.10.6.x -> Lab | 239.20.6.x -> WAN
 set -e
 
 list_net_interfaces() {
@@ -39,7 +39,7 @@ command -v smcroutectl >/dev/null || sudo apt install -y smcroute
 sudo systemctl restart smcroute      # limpa rotas antigas
 sudo systemctl enable smcroute 2>/dev/null || true
 sleep 1
-sudo smcroutectl add "$IF_LAN" 239.10.4.0/24 "$IF_LAB"
-sudo smcroutectl add "$IF_LAN" 239.20.4.0/24 ppp0
+sudo smcroutectl add "$IF_LAN" 239.10.6.0/24 "$IF_LAB"
+sudo smcroutectl add "$IF_LAN" 239.20.6.0/24 ppp0
 
 echo; echo "=== OK ==="; sudo smcroutectl show

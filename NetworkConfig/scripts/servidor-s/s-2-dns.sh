@@ -1,8 +1,8 @@
 #!/bin/bash
-# [S] Servidor DNS (BIND9) — zona grupo4.unb direta e reversa + forwarder
+# [S] Servidor DNS (BIND9) — zona grupo6.unb direta e reversa + forwarder
 set -e
 
-DOMINIO="grupo4.unb"
+DOMINIO="grupo6.unb"
 IP_S="172.16.0.2"
 FORWARDER="${1:-8.8.8.8}"   # pode passar outro: ./s-2-dns.sh <ip-dns-do-lab>
 
