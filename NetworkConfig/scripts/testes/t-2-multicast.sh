@@ -1,5 +1,11 @@
 #!/bin/bash
 # T2 — Roteamento multicast fim a fim (sem depender do VLC)
+#
+# ONDE RODAR: em 3 máquinas AO MESMO TEMPO, nesta ordem:
+#   1º receptor em X ou Y (perfil WAN) — ou Z/W do lab (perfil LAN)
+#   2º emissor no S (é de lá que os vídeos saem)
+#   3º contadores em R1 e R2 (papel "roteador")
+#
 # Emissor injeta tráfego UDP no grupo; receptor confirma que os pacotes
 # atravessaram os roteadores (smcroute). Funciona nos dois perfis:
 #   LAN  (Z/W):  239.10.6.<canal>   WAN (X/Y):  239.20.6.<canal>

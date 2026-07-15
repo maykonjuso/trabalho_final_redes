@@ -1,7 +1,12 @@
 #!/bin/bash
 # T4 — Bateria completa da aplicação Mini-IPTV (backend + regras de negócio)
-# Rode no S (testa também processos VLC e arquivos) ou em qualquer máquina
-# (testa via API Gateway do R1 — os testes locais são pulados).
+#
+# ONDE RODAR:
+#   * no S  -> bateria completa (confere tb processos VLC, arquivos
+#              convertidos e o serviço systemd)
+#   * em X/Y (ou Z/W) -> valida o caminho real via API Gateway do R1;
+#              os testes locais saem como [PULADO]
+# O script acha a API sozinho: localhost:8000 no S, r1.grupo6.unb/api fora.
 #
 # Cobre: OAuth2/JWT, perfis LAN x WAN115K, endereçamento multicast, regra do
 # canal único na WAN, troca/saída de canal, difusão sob demanda, playlist,

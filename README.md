@@ -21,8 +21,13 @@ Multicast (grupo 6): `239.10.6.x` = perfil LAN (Z/W, vídeo HD) · `239.20.6.x` 
 ## Como usar
 
 ```bash
-sudo bash run.sh        # menu: escolha a máquina e o script
+sudo bash run.sh        # menu inteligente por máquina
 ```
+
+Na **primeira execução** o menu pergunta que máquina é aquela (S, R1, R2 ou X/Y) e grava a escolha
+em `/etc/miniiptv.maquina` (fora do repositório — o pendrive roda em várias máquinas sem confundir).
+Das próximas vezes ele mostra **só o que se aplica àquela máquina**: os scripts de configuração na
+ordem certa, os testes recomendados para ela, o RESET e a opção *trocar de máquina* (se errar a escolha).
 
 Ou rode direto (os nomes têm número = ordem):
 
@@ -43,17 +48,25 @@ Ou rode direto (os nomes têm número = ordem):
 | S  | 4 | `servidor-s/s-4-backend.sh` | Backend Mini-IPTV (Flask+systemd) |
 | R1 | 6 | `roteador-r1/r1-6-web.sh` | Apache: intranet + API Gateway HTTP/HTTPS + frontend |
 | X/Y| 1 | `cliente-x/x-1-dhcp.sh` | DHCP + DNS -> S |
-| —  | — | `testes/t-1-conectividade.sh` | camada IP: pings de todos os saltos, NAT, DNS |
-| —  | — | `testes/t-2-multicast.sh` | multicast fim a fim com iperf (emissor/receptor/roteador) |
-| —  | — | `testes/t-3-servicos.sh` | DNS, intranet/API-Gateway HTTP+HTTPS, SMTP/IMAP/POP3, DHCP |
-| —  | — | `testes/t-4-backend.sh` | bateria completa da aplicação (41 testes: JWT, perfis, WAN, upload, qualidades, painel) |
-| —  | — | `testes/t-5-wan.sh` | enlace PPP: tc 115200, latência x tamanho de pacote, drops |
+| todas | — | `testes/t-1-conectividade.sh` | camada IP: pings de todos os saltos, NAT, DNS |
+| X/Y + S (+R1/R2) | — | `testes/t-2-multicast.sh` | multicast fim a fim com iperf (emissor/receptor/roteador) |
+| X/Y | — | `testes/t-3-servicos.sh` | DNS, intranet/API-Gateway HTTP+HTTPS, SMTP/IMAP/POP3, DHCP |
+| S (ou X/Y) | — | `testes/t-4-backend.sh` | bateria completa da aplicação (41 testes: JWT, perfis, WAN, upload, qualidades, painel) |
+| R1 | — | `testes/t-5-wan.sh` | enlace PPP: tc 115200, latência x tamanho de pacote, drops |
 
 **Ordem recomendada no lab:** R2(1,2) → R1(1,2,3) → S(1,2,3,4) → R2(3,4) → R1(4,5,6) → X/Y(1) → testes.
 
-**Testes:** todos os `t-*.sh` rodam em qualquer máquina — o que não se aplica ali é marcado
-`[PULADO]`. O `t-4` acha a API sozinho (backend direto no S ou via gateway do R1) e, quando roda
-no próprio S, confere também processos VLC, arquivos convertidos e o serviço systemd.
+### Onde rodar cada teste
+
+| Teste | Onde rodar | Por quê |
+|---|---|---|
+| **t-1** | **em cada máquina** (S, R1, R2, X, Y) | cada uma tem uma visão diferente da rede; o teste completo é a soma — em X/Y valida a travessia da WAN, no S valida o caminho contrário |
+| **t-2** | **3 máquinas ao mesmo tempo**: 1º receptor em X ou Y (perfil WAN) ou Z/W (perfil LAN) → 2º emissor no **S** → 3º contadores em **R1 e R2** | é um teste fim a fim: o tráfego nasce no S e precisa ser visto chegando no receptor, com os contadores do smcroute subindo nos roteadores |
+| **t-3** | **X ou Y** (ideal) — os testes de DHCP só existem lá; em Z/W ou S também vale (DHCP sai `[PULADO]`) | valida os serviços do ponto de vista do cliente final: DNS no S, web/gateway no R1, e-mail no S |
+| **t-4** | **S** para a bateria completa (confere processos VLC, arquivos convertidos e systemd); repita em **X/Y** para validar o caminho via API Gateway | ele acha a API sozinho: no S usa `localhost:8000`; nas outras máquinas usa `r1.grupo6.unb/api` e pula os testes locais |
+| **t-5** | **R1** (é onde estão o `tc` e o ppp0 com estatísticas); em X/Y roda só a parte de travessia do enlace | valida a limitação de 115200 bps: qdisc, drops e o RTT crescendo com o tamanho do pacote |
+
+Todos imprimem `[PULADO]` no que não se aplica à máquina onde rodaram — nunca é erro rodar no lugar "errado".
 
 ## Deu problema? Reset total
 

@@ -1,6 +1,9 @@
 #!/bin/bash
 # T3 — Serviços da intranet: DNS, WEB/API-Gateway, e-mail (SMTP/IMAP/POP3), DHCP
-# Rode em qualquer máquina; testes que não se aplicam são marcados como pulados.
+#
+# ONDE RODAR: em X ou Y (ideal — é o ponto de vista do cliente final e os
+# testes de DHCP só existem lá). Em Z/W ou S também funciona, mas a parte
+# de DHCP sai como [PULADO].
 S_IP=172.16.0.2
 PASSA=0; FALHA=0; PULA=0
 ok(){ PASSA=$((PASSA+1)); echo -e "\e[32m[OK]\e[0m $1"; }

@@ -1,7 +1,9 @@
 #!/bin/bash
 # T5 — Enlace WAN PPP 115200 bps + controle de banda (tc)
-# Rode preferencialmente no R1 ou R2 (onde o ppp0 existe); nas demais
-# máquinas testa apenas a travessia do enlace.
+#
+# ONDE RODAR: no R1 (é lá que estão o ppp0 e o tc de 115200 bps — mostra
+# qdisc, drops e backlog). No R2 valida o outro lado do enlace; nas demais
+# máquinas só a travessia é testada e o resto sai como [PULADO].
 PASSA=0; FALHA=0; PULA=0
 ok(){ PASSA=$((PASSA+1)); echo -e "\e[32m[OK]\e[0m $1"; }
 falha(){ FALHA=$((FALHA+1)); echo -e "\e[31m[FALHOU]\e[0m $1"; }

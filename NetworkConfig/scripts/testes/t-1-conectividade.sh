@@ -1,5 +1,10 @@
 #!/bin/bash
-# T1 — Conectividade IP (camada de rede) — rode em QUALQUER máquina
+# T1 — Conectividade IP (camada de rede)
+#
+# ONDE RODAR: em CADA máquina (S, R1, R2, X e Y) — cada uma enxerga a rede
+# de um ângulo; o teste completo é a soma. Em X/Y valida a travessia da
+# WAN PPP; no S valida o caminho contrário.
+#
 # Verifica se todos os saltos da topologia se enxergam:
 #   [S] --- [R1] ==PPP== [R2] --- [X/Y]
 PASSA=0; FALHA=0
