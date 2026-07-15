@@ -59,9 +59,11 @@ Ou rode direto (os nomes têm número = ordem):
 - Pacotes (bind9, postfix, smcroute...) são instalados pelo próprio script quando faltam — instale **enquanto a máquina ainda tem Internet** (a WAN de 115200 bps não serve para apt).
 - Vídeos: copie `filme.mp4`, `aula.mp4`, `show.mp4` para `/opt/miniiptv/videos` (o s4 converte p/ as versões WAN).
 - Usuários da aplicação: `admin/admin123`, `aluno1/senha1` … `aluno4/senha4`.
-- **Qualidades WAN**: além da versão *leve* (80 kb/s, comando da spec), o backend gera uma *ultra leve*
-  (~45 kb/s totais: vídeo 33k, 8 fps, 192x144, áudio 12k). Como o PPP de 115200 bps ainda carrega o
-  overhead TS/UDP/PPP, a *ultra* transmite com folga e trava menos — o cliente WAN escolhe no frontend
-  (ou via `POST /api/canais/<n>/assistir` com `{"qualidade":"ultra"}`).
+- **Qualidades WAN**: além da versão *leve* (80 kb/s, comando da spec), o backend gera *ultra*
+  (~20 kb/s: vídeo 12k @ 5 fps 160x120 + áudio 8k) e *mínima* (~12 kb/s: vídeo 6k @ 3 fps 128x96 +
+  áudio 6k). O PPP de 115200 bps perde muita banda com o overhead TS/UDP/PPP, então na prática só as
+  versões bem ruins passam sem travar no cabo serial — o cliente WAN escolhe no frontend (ou via
+  `POST /api/canais/<n>/assistir` com `{"qualidade":"ultra"}` / `{"qualidade":"minima"}`).
+  Se os presets mudarem, o s4 apaga e regera os `_uld`/`_min` automaticamente na próxima execução.
 - O JWT é gerado com `hmac`/`base64` da biblioteca padrão (sem PyJWT — o `python3-jwt` do apt é a
   versão 1.x, que retorna `bytes` e quebrava o `jsonify`).

@@ -36,10 +36,10 @@ Backend da aplicação de difusão de vídeos em multicast (spec seção 2.2):
     espectadores;
   * perfis de cliente: LAN (qualidade original, canais simultâneos) e
     WAN115K (versão leve, um único canal por vez no enlace de 115200 bps);
-  * qualidades WAN: "leve" (80 kb/s, comando da spec) e "ultra"
-    (~45 kb/s totais) — o enlace PPP de 115200 bps ainda carrega o
-    overhead do TS/UDP/PPP, então a ultra leve dá folga e transmite
-    com menos travamentos;
+  * qualidades WAN: "leve" (80 kb/s, comando da spec), "ultra"
+    (~20 kb/s totais) e "minima" (~12 kb/s totais) — o enlace PPP de
+    115200 bps ainda carrega o overhead do TS/UDP/PPP, então as opções
+    precisam ser bem ruins mesmo p/ transmitir sem travar no serial;
   * playlist m3u por perfil e painel administrativo.
 
 Endereçamento multicast: 239.<perfil>.<grupo>.<canal>, porta 5004,
@@ -75,13 +75,15 @@ PERFIL_BYTE   = {"LAN": 10, "WAN115K": 20}
 CAPACIDADE_WAN = 115200  # bps do enlace PPP
 
 # Presets de conversão p/ clientes WAN115K. "leve" é o comando da Obs1 da
-# spec; "ultra" reduz ainda mais para caber com folga no PPP (vídeo 33k +
-# áudio 12k ≈ 45 kb/s antes do overhead TS).
+# spec; "ultra" é agressiva de propósito: o cabo serial de 115200 bps ainda
+# perde banda com o overhead TS/UDP/PPP, então o alvo real útil é ~20 kb/s
+# (vídeo 12k @ 5 fps 160x120 + áudio 8k mono 11 kHz).
 PRESETS_WAN = {
-    "leve":  ["-b:v", "80k", "-r", "10", "-s", "320x240", "-b:a", "16k"],
-    "ultra": ["-b:v", "33k", "-r", "8",  "-s", "192x144", "-b:a", "12k"],
+    "leve":   ["-b:v", "80k", "-r", "10", "-s", "320x240", "-b:a", "16k", "-ar", "22050"],
+    "ultra":  ["-b:v", "12k", "-r", "5",  "-s", "160x120", "-b:a", "8k",  "-ar", "11025"],
+    "minima": ["-b:v", "6k",  "-r", "3",  "-s", "128x96",  "-b:a", "6k",  "-ar", "8000"],
 }
-COLUNA_QUALIDADE = {"leve": "arquivo_ld", "ultra": "arquivo_uld"}
+COLUNA_QUALIDADE = {"leve": "arquivo_ld", "ultra": "arquivo_uld", "minima": "arquivo_min"}
 
 app = Flask(__name__)
 
@@ -123,6 +125,7 @@ CREATE TABLE IF NOT EXISTS videos(
     arquivo_hd  TEXT,
     arquivo_ld  TEXT,
     arquivo_uld TEXT,
+    arquivo_min TEXT,
     duracao_s   REAL,
     resolucao   TEXT,
     bitrate_bps INTEGER,
@@ -148,10 +151,11 @@ def garantir_esquema(con):
     con.execute("DROP TABLE IF EXISTS users")     # tabelas da app v1
     con.execute("DROP TABLE IF EXISTS channels")
     con.executescript(ESQUEMA)
-    try:  # bancos criados antes da coluna de qualidade ultra
-        con.execute("ALTER TABLE videos ADD COLUMN arquivo_uld TEXT")
-    except sqlite3.OperationalError:
-        pass
+    for coluna in ("arquivo_uld", "arquivo_min"):  # bancos criados antes das qualidades extras
+        try:
+            con.execute(f"ALTER TABLE videos ADD COLUMN {coluna} TEXT")
+        except sqlite3.OperationalError:
+            pass
     con.commit()
 
 # ------------------------------------------------------- JWT (stdlib apenas)
@@ -231,7 +235,7 @@ def converter_wan(origem: str, destino: str, qualidade: str):
     """Gera versão compatível com o enlace WAN de 115200 bps."""
     subprocess.run(["ffmpeg", "-y", "-i", origem,
                     "-c:v", codec_ld_disponivel(), *PRESETS_WAN[qualidade],
-                    "-c:a", "aac", "-ac", "1", "-ar", "22050", destino],
+                    "-c:a", "aac", "-ac", "1", destino],
                    check=True, capture_output=True)
 
 def extrair_metadados(arquivo: str) -> dict:
@@ -467,10 +471,12 @@ def cadastrar_video():
     caminho_hd  = os.path.join(DIR_VIDEOS, f"canal{canal}_hd{extensao}")
     caminho_ld  = os.path.join(DIR_VIDEOS, f"canal{canal}_ld.mp4")
     caminho_uld = os.path.join(DIR_VIDEOS, f"canal{canal}_uld.mp4")
+    caminho_min = os.path.join(DIR_VIDEOS, f"canal{canal}_min.mp4")
     arquivo.save(caminho_hd)
     try:
         converter_wan(caminho_hd, caminho_ld, "leve")
         converter_wan(caminho_hd, caminho_uld, "ultra")
+        converter_wan(caminho_hd, caminho_min, "minima")
     except subprocess.CalledProcessError as e:
         os.unlink(caminho_hd)
         return jsonify(erro="falha na conversão ffmpeg",
@@ -479,10 +485,10 @@ def cadastrar_video():
     meta = extrair_metadados(caminho_hd)
     titulo = request.form.get("titulo") or os.path.splitext(arquivo.filename)[0]
     con.execute("""INSERT OR REPLACE INTO videos
-                   (canal,titulo,arquivo_hd,arquivo_ld,arquivo_uld,duracao_s,
-                    resolucao,bitrate_bps,codec_video,codec_audio,tamanho_mb)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
-                (canal, titulo, caminho_hd, caminho_ld, caminho_uld,
+                   (canal,titulo,arquivo_hd,arquivo_ld,arquivo_uld,arquivo_min,
+                    duracao_s,resolucao,bitrate_bps,codec_video,codec_audio,tamanho_mb)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (canal, titulo, caminho_hd, caminho_ld, caminho_uld, caminho_min,
                  meta["duracao_s"], meta["resolucao"], meta["bitrate_bps"],
                  meta["codec_video"], meta["codec_audio"], meta["tamanho_mb"]))
     con.commit()
@@ -501,7 +507,8 @@ def remover_video(canal):
         con.execute("DELETE FROM sessoes WHERE canal=?", (canal,))
         con.execute("DELETE FROM videos WHERE canal=?", (canal,))
         con.commit()
-    for arq in (video["arquivo_hd"], video["arquivo_ld"], video["arquivo_uld"]):
+    for arq in (video["arquivo_hd"], video["arquivo_ld"],
+                video["arquivo_uld"], video["arquivo_min"]):
         if arq and os.path.isfile(arq):
             os.unlink(arq)
     return jsonify(ok=True)
@@ -573,14 +580,16 @@ def inicializar_banco():
                    if os.path.isfile(c)), None)
         ld  = os.path.join(DIR_VIDEOS, f"{base}_ld.mp4")
         uld = os.path.join(DIR_VIDEOS, f"{base}_uld.mp4")
+        mn  = os.path.join(DIR_VIDEOS, f"{base}_min.mp4")
         if hd and os.path.isfile(ld):
             meta = extrair_metadados(hd)
             con.execute("""INSERT OR REPLACE INTO videos
-                           (canal,titulo,arquivo_hd,arquivo_ld,arquivo_uld,duracao_s,
-                            resolucao,bitrate_bps,codec_video,codec_audio,tamanho_mb)
-                           VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                           (canal,titulo,arquivo_hd,arquivo_ld,arquivo_uld,arquivo_min,
+                            duracao_s,resolucao,bitrate_bps,codec_video,codec_audio,tamanho_mb)
+                           VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
                         (numero, nome, hd, ld,
                          uld if os.path.isfile(uld) else None,
+                         mn if os.path.isfile(mn) else None,
                          meta["duracao_s"], meta["resolucao"], meta["bitrate_bps"],
                          meta["codec_video"], meta["codec_audio"], meta["tamanho_mb"]))
     con.commit()
@@ -602,25 +611,54 @@ PYAPP
 # ---------- converte vídeos-semente (se existirem) e semeia o banco ----------
 CODEC=$(ffmpeg -hide_banner -encoders 2>/dev/null | grep -oE ' (libx264|libopenh264|mpeg4) ' | head -1 | tr -d ' ')
 CODEC=${CODEC:-libx264}
-converte(){ # converte <origem> <destino> <bv> <fps> <res> <ba>
+converte(){ # converte <origem> <destino> <bv> <fps> <res> <ba> <ar>
   sudo ffmpeg -y -i "$1" -c:v "$CODEC" -b:v "$3" -r "$4" -s "$5" \
-              -c:a aac -b:a "$6" -ac 1 -ar 22050 "$2" >/dev/null 2>&1
+              -c:a aac -b:a "$6" -ac 1 -ar "$7" "$2" >/dev/null 2>&1
 }
+LD_ARGS="80k 10 320x240 16k 22050"
+ULD_ARGS="12k 5 160x120 8k 11025"
+MIN_ARGS="6k 3 128x96 6k 8000"
+
+# se os presets WAN mudaram desde a última execução, refaz _uld e _min
+MARCA=/opt/miniiptv/videos/.preset-wan
+if [ "$(sudo cat "$MARCA" 2>/dev/null)" != "$ULD_ARGS | $MIN_ARGS" ]; then
+  sudo ls /opt/miniiptv/videos/*_uld.mp4 >/dev/null 2>&1 \
+    && echo "[S] Presets WAN mudaram — regerando as versões _uld/_min..."
+  sudo rm -f /opt/miniiptv/videos/*_uld.mp4 /opt/miniiptv/videos/*_min.mp4 \
+             /opt/miniiptv/videos/.preset-uld
+  echo "$ULD_ARGS | $MIN_ARGS" | sudo tee "$MARCA" >/dev/null
+fi
+
+gerar_versoes(){ # gerar_versoes <arquivo_hd> <prefixo-saida>
+  local HD="$1" PRE="/opt/miniiptv/videos/$2"
+  if ! sudo test -f "${PRE}_ld.mp4"; then
+    echo "[S] Convertendo $(basename "$HD") -> $2_ld.mp4 ($LD_ARGS, codec $CODEC)..."
+    converte "$HD" "${PRE}_ld.mp4" $LD_ARGS \
+      || echo "[AVISO] conversão leve de $2 falhou — verifique o ffmpeg"
+  fi
+  if ! sudo test -f "${PRE}_uld.mp4"; then
+    echo "[S] Convertendo $(basename "$HD") -> $2_uld.mp4 ($ULD_ARGS, ultra p/ PPP)..."
+    converte "$HD" "${PRE}_uld.mp4" $ULD_ARGS \
+      || echo "[AVISO] conversão ultra de $2 falhou — verifique o ffmpeg"
+  fi
+  if ! sudo test -f "${PRE}_min.mp4"; then
+    echo "[S] Convertendo $(basename "$HD") -> $2_min.mp4 ($MIN_ARGS, mínima p/ PPP)..."
+    converte "$HD" "${PRE}_min.mp4" $MIN_ARGS \
+      || echo "[AVISO] conversão mínima de $2 falhou — verifique o ffmpeg"
+  fi
+}
+
+# vídeos-semente (filme/aula/show copiados manualmente)
 for v in filme aula show; do
   HD=""
   sudo test -f "/opt/miniiptv/videos/${v}_hd.mp4" && HD="/opt/miniiptv/videos/${v}_hd.mp4"
   [ -z "$HD" ] && sudo test -f "/opt/miniiptv/videos/${v}.mp4" && HD="/opt/miniiptv/videos/${v}.mp4"
-  [ -z "$HD" ] && continue
-  if ! sudo test -f "/opt/miniiptv/videos/${v}_ld.mp4"; then
-    echo "[S] Convertendo $(basename "$HD") -> ${v}_ld.mp4 (80k, codec $CODEC)..."
-    converte "$HD" "/opt/miniiptv/videos/${v}_ld.mp4" 80k 10 320x240 16k \
-      || echo "[AVISO] conversão leve de $v falhou — verifique o ffmpeg"
-  fi
-  if ! sudo test -f "/opt/miniiptv/videos/${v}_uld.mp4"; then
-    echo "[S] Convertendo $(basename "$HD") -> ${v}_uld.mp4 (33k, ultra leve p/ PPP)..."
-    converte "$HD" "/opt/miniiptv/videos/${v}_uld.mp4" 33k 8 192x144 12k \
-      || echo "[AVISO] conversão ultra de $v falhou — verifique o ffmpeg"
-  fi
+  [ -n "$HD" ] && gerar_versoes "$HD" "$v"
+done
+# vídeos que entraram por upload no frontend (canalN_hd.*)
+for HD in $(sudo sh -c 'ls /opt/miniiptv/videos/canal*_hd.* 2>/dev/null'); do
+  PRE=$(basename "$HD"); PRE=${PRE%%_hd.*}
+  gerar_versoes "$HD" "$PRE"
 done
 
 sudo chown -R iptv:iptv /opt/miniiptv
@@ -684,5 +722,13 @@ else
   sudo journalctl -u miniiptv -n 30 --no-pager
   exit 1
 fi
-sudo test -f /opt/miniiptv/videos/filme.mp4 || sudo test -f /opt/miniiptv/videos/filme_hd.mp4 \
-  || echo "[PENDENTE] copie filme.mp4, aula.mp4, show.mp4 p/ /opt/miniiptv/videos e rode este script de novo"
+# reconhece vídeos já cadastrados no banco (de execuções anteriores ou upload),
+# não apenas os arquivos-semente novos
+NVID=$(sudo -u iptv python3 -c "
+import sqlite3
+print(sqlite3.connect('/opt/miniiptv/iptv.db').execute('SELECT COUNT(*) FROM videos').fetchone()[0])" 2>/dev/null || echo 0)
+if [ "${NVID:-0}" -gt 0 ]; then
+  echo "[OK] $NVID vídeo(s) cadastrados no banco e prontos para transmissão"
+else
+  echo "[PENDENTE] nenhum vídeo cadastrado — copie filme.mp4, aula.mp4, show.mp4 p/ /opt/miniiptv/videos e rode este script de novo (ou envie pelo frontend como admin)"
+fi

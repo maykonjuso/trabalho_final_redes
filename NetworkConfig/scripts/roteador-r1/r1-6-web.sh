@@ -145,7 +145,8 @@ sudo tee /var/www/html/iptv.html >/dev/null <<'HTML'
     <span id="chipUsuario" class="chip"></span>
     <select id="selQualidade" style="display:none;width:auto" title="qualidade da transmissão WAN">
       <option value="leve">qualidade leve · 80 kb/s</option>
-      <option value="ultra">ultra leve · 33 kb/s (PPP lento)</option>
+      <option value="ultra" selected>ultra leve · ~20 kb/s (PPP lento)</option>
+      <option value="minima">mínima · ~12 kb/s (último recurso)</option>
     </select>
     <button class="fantasma" onclick="baixarPlaylist()">⬇ playlist .m3u</button>
     <button id="botaoAdmin" class="fantasma" style="display:none"
