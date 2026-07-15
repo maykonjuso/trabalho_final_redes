@@ -43,10 +43,17 @@ Ou rode direto (os nomes têm número = ordem):
 | S  | 4 | `servidor-s/s-4-backend.sh` | Backend Mini-IPTV (Flask+systemd) |
 | R1 | 6 | `roteador-r1/r1-6-web.sh` | Apache: intranet + API Gateway HTTP/HTTPS + frontend |
 | X/Y| 1 | `cliente-x/x-1-dhcp.sh` | DHCP + DNS -> S |
-| —  | — | `testes/t-1-conectividade.sh` | bateria de ping/curl/DNS |
-| —  | — | `testes/t-2-multicast.sh` | teste multicast com iperf |
+| —  | — | `testes/t-1-conectividade.sh` | camada IP: pings de todos os saltos, NAT, DNS |
+| —  | — | `testes/t-2-multicast.sh` | multicast fim a fim com iperf (emissor/receptor/roteador) |
+| —  | — | `testes/t-3-servicos.sh` | DNS, intranet/API-Gateway HTTP+HTTPS, SMTP/IMAP/POP3, DHCP |
+| —  | — | `testes/t-4-backend.sh` | bateria completa da aplicação (41 testes: JWT, perfis, WAN, upload, qualidades, painel) |
+| —  | — | `testes/t-5-wan.sh` | enlace PPP: tc 115200, latência x tamanho de pacote, drops |
 
 **Ordem recomendada no lab:** R2(1,2) → R1(1,2,3) → S(1,2,3,4) → R2(3,4) → R1(4,5,6) → X/Y(1) → testes.
+
+**Testes:** todos os `t-*.sh` rodam em qualquer máquina — o que não se aplica ali é marcado
+`[PULADO]`. O `t-4` acha a API sozinho (backend direto no S ou via gateway do R1) e, quando roda
+no próprio S, confere também processos VLC, arquivos convertidos e o serviço systemd.
 
 ## Deu problema? Reset total
 
