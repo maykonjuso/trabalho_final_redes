@@ -5,6 +5,57 @@ Scripts de configuração por máquina: leve o repositório para cada PC (pendri
 
 ## Topologia
 
+```mermaid
+flowchart LR
+    subgraph LAB["🌐 Rede do Laboratório — Internet"]
+        ZW["🖥️ Z e W<br/>clientes perfil LAN<br/>(frontend + VLC, vídeo HD)"]
+    end
+
+    subgraph LAN1["LAN #1 — 172.16.0.0/16"]
+        S["🗄️ S — servidor<br/>172.16.0.2<br/>DNS · SMTP/IMAP · VLC Server · backend"]
+        R1["🔀 R1 — roteador<br/>172.16.0.1 · 10.0.0.1<br/>Apache API-Gateway · Source NAT · tc"]
+    end
+
+    subgraph LAN2["LAN #2 — 192.168.0.0/24"]
+        R2["🔀 R2 — roteador<br/>10.0.0.2 · 192.168.0.1<br/>DHCP Server · multicast"]
+        X["💻 X<br/>cliente WAN115K"]
+        Y["💻 Y<br/>cliente WAN115K"]
+    end
+
+    LABSW["🔌 USB→Eth<br/>(Source NAT)"]
+    ZW --- LABSW --- R1
+    S ---|"cabo Ethernet"| R1
+    R1 ===|"serial PPP<br/>115200 bps ⚠️"| R2
+    R2 ---|"DHCP .100-.200"| X
+    R2 ---|"DHCP .100-.200"| Y
+
+    style S fill:#1a3a2a,stroke:#2dd4bf,color:#e6e9f0
+    style R1 fill:#2a2340,stroke:#7c6cff,color:#e6e9f0
+    style R2 fill:#2a2340,stroke:#7c6cff,color:#e6e9f0
+    style X fill:#3a2f1a,stroke:#fbbf24,color:#e6e9f0
+    style Y fill:#3a2f1a,stroke:#fbbf24,color:#e6e9f0
+    style ZW fill:#1a3a2a,stroke:#2dd4bf,color:#e6e9f0
+    linkStyle 3 stroke:#f87171,stroke-width:3px
+```
+
+```mermaid
+flowchart LR
+    subgraph FLUXO["📺 Fluxos multicast (porta 5004)"]
+        VLC["VLC Server no S"]
+        LANM["239.10.6.&lt;canal&gt;<br/>perfil LAN — vídeo HD"]
+        WANM["239.20.6.&lt;canal&gt;<br/>perfil WAN115K — vídeo leve/ultra/mínima"]
+        ZW2["Z e W (via R1)"]
+        XY2["X e Y (via PPP + R2)"]
+    end
+    VLC --> LANM --> ZW2
+    VLC --> WANM --> XY2
+    style LANM fill:#1a3a2a,stroke:#2dd4bf,color:#e6e9f0
+    style WANM fill:#3a2f1a,stroke:#fbbf24,color:#e6e9f0
+```
+
+<details>
+<summary>Versão ASCII (para quem lê no terminal)</summary>
+
 ```
                 [ Rede do Laboratório (Internet, Z e W) ]
                                 |
@@ -15,6 +66,8 @@ Scripts de configuração por máquina: leve o repositório para cada PC (pendri
                                                                       |
                                                                [ X ]  [ Y ]  (DHCP .100-.200)
 ```
+
+</details>
 
 Multicast (grupo 6): `239.10.6.x` = perfil LAN (Z/W, vídeo HD) · `239.20.6.x` = perfil WAN115K (X/Y, vídeo leve) · porta 5004.
 
